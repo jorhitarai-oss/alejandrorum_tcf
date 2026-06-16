@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ALEJANDRORUM // TCF_CONSOLE</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;700&family=Playfair+Display:wght@700;900&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #020810;
+            --surface: rgba(10, 25, 47, 0.7);
+            --cyan: #00f2ff;
+            --pink: #ff2a6d;
+            --text: #e6f1ff;
+            --text-dim: #8892b0;
+            --border: rgba(0, 242, 255, 0.2);
+            --font-mono: 'Fira Code', monospace;
+            --font-serif: 'Playfair Display', serif;
+            --blur: blur(15px);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+            background-image: 
+                linear-gradient(var(--border) 1px, transparent 1px),
+                linear-gradient(90deg, var(--border) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+
+        /* --- LANDING / LINK TERMINAL --- */
+        #landing {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
+            background: var(--bg); z-index: 10000;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            padding: 2rem; transition: opacity 0.8s ease;
+        }
+
+        .terminal-box {
+            max-width: min(760px, calc(100vw - 4cm));
+            width: 100%;
+            max-height: calc(100vh - 4cm);
+            margin: auto;
+            background: var(--surface); backdrop-filter: var(--blur);
+            border: 1px solid var(--cyan); padding: 1.2rem 1.4rem;
+            border-radius: 4px; box-shadow: 0 0 50px rgba(0, 242, 255, 0.1);
+        }
+
+        #link-text {
+            font-family: var(--font-mono); font-size: 1rem; line-height: 1.6;
+            color: var(--cyan); margin-bottom: 1rem; min-height: 80px;
+            white-space: pre-wrap; padding: 0.2rem 0;
+            overflow-y: auto; max-height: calc(100vh - 8cm);
+        }
+
+        @keyframes blink {
+            0%, 49% { opacity: 1; }
+            50%, 100% { opacity: 0; }
+        }
+
+        .cursor {
+            display: inline-block;
+            width: 2px;
+            height: 1.2em;
+            background-color: var(--cyan);
+            margin-left: 2px;
+            animation: blink 1s infinite;
+        }
+
+        .menu-options { display: flex; flex-direction: column; gap: 1rem; opacity: 0; visibility: hidden; transition: 1s ease; }
+        .menu-options.visible { opacity: 1; visibility: visible; }
+
+        .btn-link {
+            background: transparent; border: 1px solid var(--pink); color: var(--pink);
+            padding: 0.8rem 1.5rem; font-family: var(--font-mono); font-size: 0.85rem;
+            cursor: pointer; text-align: left; transition: 0.3s;
+        }
+        .btn-link:hover { background: var(--pink); color: white; box-shadow: 0 0 20px var(--pink); }
+
+        /* --- CONSOLA PRINCIPAL --- */
+        #main-console { display: none; padding-top: 80px; }
+
+        nav {
+            position: fixed; top: 0; width: 100%; padding: 1rem 5%;
+            background: rgba(2, 8, 16, 0.9); backdrop-filter: var(--blur);
+            border-bottom: 1px solid var(--border); display: flex;
+            justify-content: space-between; align-items: center; z-index: 9000;
+        }
+
+        .search-area { padding: 3rem 5% 1rem; max-width: 900px; margin: 0 auto; width: 100%; }
+        .search-input {
+            width: 100%; background: var(--surface); border: 1px solid var(--cyan);
+            padding: 1rem; color: var(--cyan); font-family: var(--font-mono); outline: none;
+        }
+
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 2rem; padding: 2rem 5%; }
+        .card {
+            background: var(--surface); backdrop-filter: var(--blur); border: 1px solid var(--border);
+            padding: 1.5rem; transition: 0.4s; cursor: pointer;
+        }
+        .card:hover { border-color: var(--cyan); transform: translateY(-5px); box-shadow: 0 0 30px rgba(0, 242, 255, 0.1); }
+        .card h3 { font-family: var(--font-serif); font-size: 1.4rem; margin-bottom: 0.5rem; }
+        .card p { font-family: var(--font-mono); font-size: 0.75rem; color: var(--pink); font-weight: bold; }
+
+        /* --- VENTANAS FLOTANTES (MODALES) --- */
+        .modal {
+            position: fixed; top: 0; right: -100%; width: 550px; height: 100vh;
+            background: rgba(1, 8, 18, 0.98); backdrop-filter: blur(25px);
+            border-left: 1px solid var(--cyan); z-index: 11000; padding: 0;
+            transition: 0.6s cubic-bezier(0.77, 0, 0.175, 1); overflow-y: auto;
+        }
+        .modal.open { right: 0; box-shadow: -20px 0 50px rgba(0,0,0,0.8); }
+        .close-btn { position: absolute; top: 2rem; left: 2rem; color: var(--cyan); background: none; border: none; font-size: 2rem; cursor: pointer; }
+
+        #modal-content { 
+    font-family: var(--font-mono);
+    color: var(--text);
+    line-height: 1.6;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: flex-start;
+    padding: 2rem 3rem;
+    height: auto;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-sizing: border-box;
+}
+
+/* Regla para quitar el margen superior al primer elemento del contenido */
+#modal-content > *:first-child { 
+    margin-top: 0 !important; 
+}
+        .glossary-list dt { color: var(--cyan); font-family: var(--font-mono); font-weight: bold; margin-top: 1.5rem; border-bottom: 1px solid var(--border); }
+        .glossary-list dd { font-size: 0.9rem; color: var(--text-dim); margin-top: 0.5rem; line-height: 1.5; }
+
+        .keyword { color: var(--cyan); border-bottom: 1px dashed var(--cyan); cursor: help; font-weight: 600; }
+
+        /* --- DIGITAL NOISE BACKGROUND --- */
+        #digital-noise {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    line-height: 1.2;
+    color: var(--cyan);
+    opacity: 0.03;
+    overflow: hidden;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    padding: 0; 
+    letter-spacing: 0.08em;
+    animation: noise-glitch 0.3s infinite;
+}
+
+        @keyframes noise-glitch {
+            0%, 100% { text-shadow: 0 0 1px rgba(0, 242, 255, 0.05); }
+            50% { text-shadow: 0 0 2px rgba(0, 242, 255, 0.08); }
+        }
+
+        .terminal-box {
+            position: relative;
+            z-index: 2;
+        }
+
+        @media (max-width: 600px) { .modal { width: 100%; } }
+
+        /* --- AUDIO CONTROLS --- */
+        #audio-control {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 12000;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            background: rgba(0, 242, 255, 0.1);
+            padding: 0.6rem 1rem;
+            border: 1px solid var(--cyan);
+            border-radius: 4px;
+            backdrop-filter: var(--blur);
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: var(--text-dim);
+        }
+
+        #volume-slider {
+            width: 80px;
+            cursor: pointer;
+            accent-color: var(--cyan);
+        }
+
+        #audio-toggle {
+            background: transparent;
+            border: 1px solid var(--cyan);
+            color: var(--cyan);
+            padding: 0.3rem 0.6rem;
+            cursor: pointer;
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            transition: 0.2s;
+        }
+
+        #audio-toggle:hover {
+            background: var(--cyan);
+            color: var(--bg);
+        }
+
+        @media (max-width: 600px) {
+            #audio-control {
+                bottom: 1rem;
+                right: 1rem;
+                flex-direction: column;
+                gap: 0.4rem;
+            }
+            #volume-slider { width: 60px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- INTERFAZ DE LINK -->
+    <div id="landing">
+        <div id="digital-noise"></div>
+        <div class="terminal-box">
+            <div id="link-text"></div>
+            <div id="menu" class="menu-options">
+                <button class="btn-link" onclick="app.playBeep(500); app.showTCF()">[1] ¿QUÉ ES EL TCF?</button>
+                <button class="btn-link" onclick="app.playBeepUp(); app.enterConsole()">[2] EXPLORAR BASE DE DATOS</button>
+                <button class="btn-link" onclick="app.playBeep(500); app.openGlossary()">[3] GLOSARIO TÉCNICO</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CONSOLA PRINCIPAL -->
+    <div id="main-console">
+        <nav>
+            <div style="font-family: var(--font-serif); color: var(--cyan);">ALEJANDRORUM // J06Y2313C61 </div>
+            <div>
+                <button class="btn-link" style="padding: 0.4rem 1rem; font-size: 0.7rem;" onclick="app.playBeep(500); app.openGlossary()">GLOSARIO</button>
+                <button class="btn-link" style="padding: 0.4rem 1rem; font-size: 0.7rem; margin-left: 0.5rem;" onclick="app.playBeep(500); app.showTCF()">MANIFESTO TCF</button>
+            </div>
+        </nav>
+
+        <div class="search-area">
+            <input type="text" class="search-input" placeholder="INFILTRAR BÚSQUEDA (TÍTULO / AUTOR)..." oninput="app.filter(this.value)">
+            <p id="error-msg" style="font-family: var(--font-mono); color: var(--pink); font-size: 0.7rem; margin-top: 1rem; display: none;"></p>
+        </div>
+
+        <div id="works-grid" class="grid"></div>
+    </div>
+
+    <!-- MODAL DINÁMICO -->
+    <aside id="modal" class="modal">
+        <button class="close-btn" onclick="app.playBeep(300); app.closeModal()">×</button>
+        <div id="modal-content"></div>
+    </aside>
+
+    <!-- AUDIO CONTROL -->
+    <div id="audio-control">
+        <button id="audio-toggle" onclick="app.toggleAudio()">🔊 ON</button>
+        <input type="range" id="volume-slider" min="0" max="100" value="30" onchange="app.setVolume(this.value)">
+        <span id="volume-label">30%</span>
+    </div>
+
+     <script>
+        const dictionary = {
+            "Teatro de anticipación": "Nombre usado en España en el s.XX para evitar el término 'ciencia ficción' y esquivar la censura realista.",
+            "Androide": "Simulacro artificial con apariencia humana física perfecta.",
+            "Cibercultura": "Conjunto de artes nacidas de la interacción con la tecnología digital masiva.",
+            "Cíborg": "Híbrido de carne y bits. Representa la fractura del sujeto en el TCF moderno.",
+            "Circunstancias dadas": "Reglas lógicas del mundo ficticio que el espectador debe aceptar como verdaderas.",
+            "Digitalismo": "Crítica a la opresión camuflada bajo redes sociales y utopías virtuales.",
+            "Distopía": "Describe una sociedad inexistente que el lector debe ver considerablemente peor que la suya. Se caracteriza por la alienación humana, el control totalitario o la pérdida de libertades.",
+            "Extrañamiento cognitivo": "La llave del TCF: sentir lo extraño pero entender su lógica racional (Darko Suvin).",
+            "Genre Blurring": "Emborronamiento de géneros para infiltrar la CF en la comedia o el drama social.",
+            "Imaginación asistida": "El espectador 'construye' la escenografía imposible usando las pistas de la carpintería teatral.",
+            "Novum": "La hegemonía narrativa de una innovación validada por la lógica. No es magia, es código.",
+            "Posthumanismo": "Superación del antropocentrismo. El ser humano ya no es el centro, la máquina es parte del yo.",
+            "Resistencia del Presente": "La ventaja del teatro: el cuerpo vivo del actor valida el futuro frente al simulacro del cine.",
+            "Ucronía": "Mientras la utopía niega el espacio, la ucronía niega el tiempo, situándolo en ningún tiempo concreto. Consiste en la reconstrucción lógica de la historia a partir de un hecho del pasado que sucedió de forma distinta a como lo conocemos.",
+            "Utopía": "Término general para referirse a una sociedad inexistente descrita con detalle y localizada en un tiempo y espacio determinados. Etimológicamente, proviene del juego de palabras entre outopía, lugar que no existe, y eutopía, buen lugar",
+            "Teatralidades Latentes": "Proyectos dramáticos escritos que esperan su viabilidad escénica en el porvenir."
+        };
+
+        const works = [
+    { id: 1, title: "Enmendar la plana a Dios", author: "Eduardo Zamora y Caballero", year: 1878, century: "XIX", novum: "Revivir a los muertos mediante el conocimiento fármaco-científico.", thesis: "Crítica a la arrogancia científica de la época y defensa del orden natural.", impact: "Hito arqueológico en la comedia en verso." },
+    { id: 2, title: "Sentimental Club", author: "Ramón Pérez de Ayala", year: 1909, century: "XX", novum: "Supresión radical de la individualidad, la eliminación de los sentimientos y una alteración del metabolismo biológico (inhalación de gas nutritivo).", thesis: "Crítica al colectivismo forzoso.", impact: "Distopía temprana de alta densidad intelectual." },
+    { id: 3, title: "La nieta de Fedra", author: "Halma Angélico", year: 1929, century: "XX", novum: "Recontextualización mítica como alternativa sociopolítica mediante la desmitificación racional.", thesis: "Auditoría de los roles de género y el estatuto de la mujer en la modernidad.", impact: "Pieza mitológica con carga política." },
+    { id: 4, title: "Orestes I", author: "Felipe Ximénez de Sandoval y Pedro Sánchez de Neyra", year: 1930, century: "XX", novum: "Un fármaco (suero químico) capaz de inhibir completamente el instinto de robar y engañar.", thesis: "Laboratorio ético que advierte sobre la instrumentalización del progreso por el Poder.", impact: "Parábola fictocientífica sobre regímenes autoritarios." },
+    { id: 5, title: "La sin título", author: "Enrique Jardiel Poncela", year: 1932, century: "XX", novum: "Sales químicas que otorgan la inmortalidad.", thesis: "Alteración de contratos sociales y jerarquías biológicas.", impact: "Obra de vanguardia sobre la mortalidad." },
+    { id: 6, title: "La Plasmatoria", author: "Pedro Muñoz Seca y Pedro Pérez Fernández", year: 1935, century: "XX", novum: "Dispositivo tecnológico que permite dotar de consistencia física a espíritus de figuras históricas.", thesis: "Diálogo entre el pasado histórico y la modernidad tecnológica.", impact: "Sátira técnica-teosófica." },
+    { id: 7, title: "Cuatro corazones con freno y marcha atrás", author: "Enrique Jardiel Poncela", year: 1936, century: "XX", novum: "Sales de inmortalidad y elixir que invierte la flecha del tiempo biológico.", thesis: "Ataque a la absurdidad de las instituciones humanas frente a lo extraordinario.", impact: "Uso del humor como Caballo de Troya." },
+    { id: 8, title: "La momia de Rebeque", author: "Emilio Carrere", year: 1941, century: "XX", novum: "La reanimación o resurrección científica de un sujeto biológico del pasado.", thesis: "Exploración de la persistencia de la identidad humana.", impact: "CF de corte fantástico." },
+    { id: 9, title: "Uranio 235", author: "Alfonso Sastre", year: 1946, century: "XX", novum: "Energía nuclear entendida como innovación técnica capaz de destruir la humanidad.", thesis: "Crítica radical a la ciencia belicista y la alienación atómica.", impact: "Drama postapocalíptico pionero." },
+    { id: 10, title: "Como era en un principio", author: "Jorge de la Cueva y José de la Cueva", year: 1951, century: "XX", novum: "Cometa apocalíptico inminente y construcción de un refugio hermético científico.", thesis: "Preservación del conocimiento ante el fin del mundo.", impact: "CF de catástrofe." },
+    { id: 11, title: "Otoño del 3006", author: "Agustín de Foxá", year: 1954, century: "XX", novum: "Salto temporal al año 3006, donde la tecnología ha derivado en una tecnocracia decadente.", thesis: "Escepticismo ante la fe ciega en el progreso técnico.", impact: "Tono vanguardista." },
+    { id: 12, title: "Homes i No", author: "Manuel de Pedrolo", year: 1958, century: "XX", novum: "Dispositivo de confinamiento sistémico custodiado por una autoridad absoluta (No).", thesis: "El marco de opresión que impide la comunicación y el movimiento.", impact: "Obra de resistencia política." },
+    { id: 13, title: "El tintero", author: "Carlos Muñiz", year: 1961, century: "XX", novum: "Sistema administrativo totalitario que rige la existencia mediante reglamento implacable.", thesis: "Deshumanización laboral y anulación de la autonomía.", impact: "Clásico del teatro social." },
+    { id: 14, title: "Prohibida la reproducción", author: "José Ricardo Morales", year: 1964, century: "XX", novum: "Plan de Superpoblación Intensiva que decreta la prohibición de la reproducción.", thesis: "La biología humana como variable administrativa sometida al Estado.", impact: "Crítica al control demográfico." },
+    { id: 15, title: "Hay una nube en su futuro", author: "José Ricardo Morales", year: 1965, century: "XX", novum: "Industrialización del exterminio mediante fábrica de smog y un robot que usurpa la creación humana.", thesis: "El ser humano como producto comercial.", impact: "Teatro del absurdo científico." },
+    { id: 16, title: "Odisea", author: "José Ricardo Morales", year: 1965, century: "XX", novum: "El Instituto de la Facilidad: planificación extrema que satura el espacio público para impedir el encuentro humano.", thesis: "La tecnología como obstáculo para el reencuentro.", impact: "Crítica a la tecnocracia urbana." },
+    { id: 17, title: "La cosa humana", author: "José Ricardo Morales", year: 1966, century: "XX", novum: "Extinción del Homo sapiens y su sustitución por una especie que comercializa los restos humanos.", thesis: "Humanidad como mercancía de uso doméstico.", impact: "Distopía post-humana." },
+    { id: 18, title: "El tragaluz", author: "Antonio Buero Vallejo", year: 1967, century: "XX", novum: "Dispositivos del futuro que proyectan pensamientos y culpas del pasado.", thesis: "Alegoría antitotalitaria sobre la memoria histórica.", impact: "Legitimó el TCF como teatro político." },
+    { id: 19, title: "Mito", author: "Antonio Buero Vallejo", year: 1968, century: "XX", novum: "Contacto cognitivamente validado con una civilización marciana.", thesis: "Encuentro con el otro y sus implicaciones éticas.", impact: "Exploración de la alteridad." },
+    { id: 20, title: "La nau", author: "Josep Maria Benet i Jornet", year: 1969, century: "XX", novum: "Nave generacional regida por leyes míticas donde se ha olvidado el tránsito espacial.", thesis: "Disección de la opresión y alienación de clases.", impact: "Hito del teatro catalán y CF sociopolítica." },
+    { id: 21, title: "...y las ranas pidieron un dios", author: "Miguel Cobaleda", year: 1969, century: "XX", novum: "La Computadora Providente: IA que sustituye a los antiguos dioses mediante algoritmos.", thesis: "Redención tecnológica frente al dogma tradicional.", impact: "Tecnología como nueva religión." },
+    { id: 22, title: "La máquina de pedir", author: "José Ruibal", year: 1969, century: "XX", novum: "Máquina automatizada para gestionar la caridad tras eliminar la palabra 'pobreza'.", thesis: "La burocratización de la desigualdad.", impact: "Sátira política." },
+    { id: 23, title: "Los mutantes / El rabo", author: "José Ruibal", year: 1969, century: "XX", novum: "Saturación tecnológica por artefactos electrónicos que asfixian el espacio vital.", thesis: "El individuo asfixiado por el progreso técnico.", impact: "Estética de la saturación." },
+    { id: 24, title: "Sodomáquina", author: "Carlo Frabetti", year: 1970, century: "XX", novum: "La máquina de control social total como extensión burocrático-policial.", thesis: "Denuncia directa de la vigilancia y burocracia del régimen.", impact: "Pieza clave de Nueva Dimensión." },
+    { id: 25, title: "¿Es usted feliz?", author: "Alberto Miralles", year: 1970, century: "XX", novum: "Capacidad del robot para absorber y realizar cualquier función humana, convirtiendo la existencia en mecánica.", thesis: "La vida como consumo mecánico.", impact: "Deshumanización cotidiana." },
+    { id: 26, title: "El platillo se detuvo", author: "Alberto Miralles", year: 1970, century: "XX", novum: "Existencia de seres extraterrestres tecnológicamente superiores.", thesis: "El impacto de la superioridad alienígena en la psique humana.", impact: "Ciencia ficción de contacto." },
+    { id: 27, title: "Satisfacción garantizada", author: "Alberto Miralles", year: 1970, century: "XX", novum: "Robot humanoide capaz de hacer el amor y despertar pasión.", thesis: "La afectividad artificial como respuesta a la soledad.", impact: "Exploración de la ginoide/androide." },
+    { id: 28, title: "Una posibilidad", author: "Miguel Pacheco", year: 1970, century: "XX", novum: "Cerebro rector centralizado que controla la civilización y el montaje de la obra.", thesis: "El autor como sistema de control.", impact: "Meta-teatro distópico." },
+    { id: 29, title: "Stratojet 991", author: "Juan José Alonso Millán", year: 1971, century: "XX", novum: "Avión supersónico como búnker para supervivientes tras guerra nuclear.", thesis: "La tecnología como último refugio del fin de la humanidad.", impact: "Thriller nuclear." },
+    { id: 30, title: "Un marciano sin objeto", author: "José Ricardo Morales", year: 1971, century: "XX", novum: "Marcianos en la Tierra que fracturan la verdad oficial de un Estado que niega su existencia.", thesis: "El poder frente a la evidencia de la alteridad.", impact: "Sátira política." },
+    { id: 31, title: "Orfeo y el desodorante", author: "José Ricardo Morales", year: 1972, century: "XX", novum: "Desodorante Multiplex que vaporiza objetos y seres vivos.", thesis: "La banalidad del producto químico frente a la vida humana.", impact: "Absurdo técnico." },
+    { id: 32, title: "Solos en esta tierra", author: "Manuel Alonso Alcalde", year: 1972, century: "XX", novum: "El holocausto nuclear y sus consecuencias materiales inmediatas.", thesis: "La supervivencia en un mundo devastado.", impact: "Drama apocalíptico." },
+    { id: 33, title: "Golpe de Estado año 2000", author: "Manuel Alonso Alcalde", year: 1972, century: "XX", novum: "Anticipación sociopolítica de un futuro hipotético.", thesis: "La inestabilidad del poder en el futuro.", impact: "Distopía política." },
+    { id: 34, title: "La Fundación", author: "Antonio Buero Vallejo", year: 1974, century: "XX", novum: "Sistema de control sensorial y panóptico que sustituye la realidad por una simulación.", thesis: "La represión totalitaria del individuo.", impact: "Obra maestra del TCF." },
+    { id: 35, title: "La imagen", author: "José Ricardo Morales", year: 1977, century: "XX", novum: "Sustitución biopolítica del soberano por una estatua mantenida por potencias extranjeras.", thesis: "La ficción del poder inmortal.", impact: "Biopolítica y monarquía." },
+    { id: 36, title: "Ejercicios para equilibristas", author: "Luis Matilla", year: 1980, century: "XX", novum: "Vigilancia panóptica absoluta mediante el Agente de la Brigada de Observación.", thesis: "Anulación de la privacidad del hogar.", impact: "Control totalitario." },
+    { id: 37, title: "Oh, misil", author: "Eduardo Quiles", year: 1987, century: "XX", novum: "Hibridación psíquica hombre-máquina (el humano asume ser un misil).", thesis: "Alienación bélica.", impact: "CF política." },
+    { id: 38, title: "La travesía del imperio", author: "Fernando Arrabal", year: 1989, century: "XX", novum: "Guerra con cohetes, rayos láser, sujetos híbridos y radar de vigilancia avanzada.", thesis: "La deshumanización por la técnica militar.", impact: "Apocalipsis surrealista." },
+    { id: 39, title: "Demasiado tarde para Filoctetes", author: "Alfonso Sastre", year: 1989, century: "XX", novum: "Manipulación neurológica de la memoria por el Estado.", thesis: "Alteración de la realidad del sujeto para la reinserción.", impact: "CF política." },
+    { id: 40, title: "Doctor Honoris Causa", author: "Eduardo Quiles", year: 1991, century: "XX", novum: "Aterrizaje extraterrestre retransmitido por radio.", thesis: "Impacto mediático de la llegada alienígena.", impact: "CF sociológica." },
+    { id: 41, title: "Lalibelá", author: "Ignacio García May", year: 1997, century: "XX", novum: "Espacio-tiempo onírico para transportar al sujeto o reescribir su biografía.", thesis: "La alteración del destino biológico.", impact: "Viajes místicos." },
+    { id: 42, title: "Naufragar en internet", author: "Jesús Campos García", year: 1999, century: "XXI", novum: "Internet como dispositivo de aislamiento existencial.", thesis: "Soledad tecnológica.", impact: "Crítica post-digital." },
+    { id: 43, title: "Te quiero, muñeca", author: "Ernesto Caballero", year: 2000, century: "XXI", novum: "Construcción de una ginoide perfecta para deseos masculinos.", thesis: "Mercantilización del deseo.", impact: "Robotica social." },
+    { id: 44, title: "Vitro", author: "Beatriz Cabur", year: 2000, century: "XXI", novum: "Clonación humana para alcanzar la tecnoeternidad.", thesis: "La superación de la vejez.", impact: "Posthumanismo." },
+    { id: 45, title: "Ronensbourgh", author: "Beatriz Cabur", year: 2002, century: "XXI", novum: "Ciudad cerrada con vigilancia 'Sichernet' y lenguaje impuesto por cirugía.", thesis: "Supresión del pensamiento crítico.", impact: "Distopía lingüística." },
+    { id: 46, title: "Los años eternos", author: "Ignacio García May", year: 2002, century: "XXI", novum: "Máquina de viaje temporal psíquico mediante coma inducido.", thesis: "La mente como viajero temporal.", impact: "CF psicológica." },
+    { id: 47, title: "La máquina de abrazar", author: "José Sanchis Sinisterra", year: 2002, century: "XXI", novum: "Simulación sensorial y Psicobotánica para descodificar la memoria de las plantas.", thesis: "Conocimiento transhumano.", impact: "Ciencia-naturaleza." },
+    { id: 48, title: "Almacenados", author: "David Desola", year: 2004, century: "XXI", novum: "Sistema laboral de estasis burocrática e improductiva.", thesis: "Alienación laboral.", impact: "Distopía burocrática." },
+    { id: 49, title: "Flechas del ángel del olvido", author: "José Sanchis Sinisterra", year: 2004, century: "XXI", novum: "Amnesia sistémica por saturación mediática que borra vínculos biográficos.", thesis: "Carencia de identidad por consumo.", impact: "CF sociológica." },
+    { id: 50, title: "Arizona", author: "Juan Carlos Rubio", year: 2006, century: "XXI", novum: "Caza institucionalizada de inmigrantes como ocio.", thesis: "Deshumanización del otro y xenofobia.", impact: "Distopía contemporánea." },
+    { id: 51, title: "Evolución", author: "Aina Tur", year: 2006, century: "XXI", novum: "Evolución postbiológica acelerada mediante asimilación de rasgos de otras especies.", thesis: "La mutación humana.", impact: "Posthumanismo." },
+    { id: 52, title: "La tortuga de Darwin", author: "Juan Mayorga", year: 2008, century: "XXI", novum: "Evolución biológica acelerada de un quelonio al entorno humano.", thesis: "La adaptación radical.", impact: "CF experimental." },
+    { id: 53, title: "Contra el progreso", author: "Esteve Soler", year: 2008, century: "XXI", novum: "Religiones corporativas para productividad, focas inteligentes asesinas.", thesis: "Progreso como deshumanización.", impact: "Distopía radical." },
+    { id: 54, title: "d.juan@simetrico.es", author: "Jesús Campos García", year: 2008, century: "XXI", novum: "Modificación cibernética del cuerpo para sustitución de partes orgánicas.", thesis: "La fluidez del cuerpo tecnológico.", impact: "Ciber-mito." },
+    { id: 55, title: "Contra el amor", author: "Esteve Soler", year: 2009, century: "XXI", novum: "Comercialización absoluta de los sentimientos.", thesis: "Mercado emocional.", impact: "Estructura innovadora." },
+    { id: 56, title: "Contra la democracia", author: "Esteve Soler", year: 2010, century: "XXI", novum: "Estado como empresa que legaliza el filicidio por ahorro.", thesis: "Alienación política y burocrática.", impact: "CF política." },
+    { id: 57, title: "Gen.Esix.Clonación", author: "Eva Guillamón", year: 2010, century: "XXI", novum: "Clonación con envejecimiento acelerado e implantación de recuerdos.", thesis: "Adiestramiento de clones.", impact: "CF reproductiva." },
+    { id: 58, title: "Vitalicios", author: "José Sanchis Sinisterra", year: 2010, century: "XXI", novum: "Liquidación (asesinato) institucionalizada de artistas pensionistas.", thesis: "Austeridad extrema como crimen.", impact: "Distopía presupuestaria." },
+    { id: 59, title: "Cyborg", author: "Nancho Novo", year: 2011, century: "XXI", novum: "Autonomía ontológica y afectiva del sujeto posthumano.", thesis: "Gestión autónoma de la consciencia.", impact: "Posthumanismo." },
+    { id: 60, title: "Peceras", author: "Carlos Be", year: 2012, century: "XXI", novum: "Víctima profesional: individuos que aceptan humillaciones por dinero.", thesis: "El individuo ante la crisis económica.", impact: "CF social." },
+    { id: 61, title: "HARKET [protocolo]", author: "Juan Pablo Mendiola", year: 2012, century: "XXI", novum: "Búnker gestionado por una IA con control absoluto.", thesis: "La soledad y la dependencia técnica.", impact: "IA controladora." },
+    { id: 62, title: "Última transmisión", author: "Yeray Bazo y Quique Bazo", year: 2013, century: "XXI", novum: "Fin de la cultura humana por colapso sistémico desconocido.", thesis: "Incomunicación absoluta y dependencia de máquinas.", impact: "Post-humano." },
+    { id: 63, title: "Serena apocalipsis", author: "Verónica Fernández", year: 2013, century: "XXI", novum: "Tsunami financiero que causa anarquía y escasez extrema.", thesis: "El colapso de la economía global.", impact: "CF apocalíptica." },
+    { id: 64, title: "Música", author: "Julián Fuentes Reta", year: 2013, century: "XXI", novum: "Destrucción repentina del mundo y cultura por causa desconocida.", thesis: "La fragilidad humana.", impact: "Apocalipsis existencial." },
+    { id: 65, title: "Toda una vida", author: "Antonio Bueno", year: 2014, century: "XXI", novum: "Eutanasia obligatoria a los 50 años con reciclaje de cadáveres como fertilizantes.", thesis: "El Estado y la utilidad biológica.", impact: "Distopía productivista." },
+    { id: 66, title: "Elipses", author: "Antonio César Morón", year: 2014, century: "XXI", novum: "Felicidad por modificación genética y armas de agujeros negros.", thesis: "Control biotecnológico.", impact: "CF especulativa." },
+    { id: 67, title: "Banqueros vs. zombis", author: "Pilar G. Almansa, Dolores Garayalde e Ignacio García May", year: 2015, century: "XXI", novum: "Zombieconomía: suero que convierte a insolventes en esclavos productivos muertos.", thesis: "Industrialización de la deuda.", impact: "CF política." },
+    { id: 68, title: "La autora de Las Meninas", author: "Ernesto Caballero", year: 2015, century: "XXI", novum: "Mercantilización del patrimonio histórico nacional (venta de obras de arte).", thesis: "La bancarrota del Estado.", impact: "Sátira económica." },
+    { id: 69, title: "En la Ley", author: "Sergio Martínez Vila", year: 2016, century: "XXI", novum: "Eliminación artificial de instintos humanos mediante normas bajo utopía igualitaria.", thesis: "Coerción como utopía.", impact: "CF social." },
+    { id: 70, title: "Amor y otros errores del siglo XXII", author: "Carlos Be", year: 2016, century: "XXI", novum: "Blank System: eliminación de recuerdos y uso de robots de vigilancia.", thesis: "Biopolítica de la memoria.", impact: "Control totalitario." },
+    { id: 71, title: "Furiosa Escandinavia", author: "Antonio Rojano", year: 2016, century: "XXI", novum: "Benzotriptocaína: fármaco para suprimir recuerdos traumáticos.", thesis: "La gestión química de la psique.", impact: "CF psicológica." },
+    { id: 72, title: "La redención", author: "Ana Merino", year: 2016, century: "XXI", novum: "Planeta cubierto de basura y alienígenas con tecnología salvadora.", thesis: "La devastación medioambiental.", impact: "Apocalipsis tóxico." },
+    { id: 73, title: "Los cerdos voladores", author: "Pilar G. Almansa", year: 2017, century: "XXI", novum: "Especie alienígena sentiente con capacidad para intuir el peligro.", thesis: "Inteligencia no humana.", impact: "Contacto alienígena." },
+    { id: 74, title: "Juegos para toda la familia", author: "Sergio Martínez Vila", year: 2017, century: "XXI", novum: "Institucionalización de la caza mortal de refugiados como actividad lúdica.", thesis: "Normalización de la violencia.", impact: "Distopía extrema." },
+    { id: 75, title: "Angelus Novus", author: "Juan Mayorga", year: 2017, century: "XXI", novum: "Extraterrestre que transmite una epidemia de zombificación.", thesis: "Pérdida de identidad y lenguaje.", impact: "CF apocalíptica." },
+    { id: 76, title: "Los cinco estigmas del éter (ep. IV: Isla de Sesgos)", author: "Antonio César Morón", year: 2018, century: "XXI", novum: "Exodermis (piel artificial cibernética) que permite vigilar y controlar biopolíticamente.", thesis: "Ley 0 de control absoluto.", impact: "Ciber-distopía." },
+    { id: 77, title: "Los cinco estigmas del éter (ep. V: Estructura abisal)", author: "Antonio César Morón", year: 2018, century: "XXI", novum: "Modificación para conectar el cerebro a la red y recibir publicidad directa.", thesis: "La memoria afectiva alterada por el consumo.", impact: "Post-humano." },
+    { id: 78, title: "Metálica", author: "Íñigo Guardamino", year: 2019, century: "XXI", novum: "Sexbots, ansiolíticos y comunicación virtual sustituyendo el contacto físico.", thesis: "Denuncia de la deshumanización y control biopolítico.", impact: "Sociedad postdigital." },
+    { id: 79, title: "Ronejo", author: "Rulo Pardo", year: 2019, century: "XXI", novum: "Conejo miniaturizado o microchip en el cerebro para inducir consumo compulsivo.", thesis: "Manipulación subconsciente por marcas.", impact: "Consumo tecnológico." },
+    { id: 80, title: "El Gólem", author: "Juan Mayorga", year: 2022, century: "XXI", novum: "Uploading de memoria: transferencia de impulsos entre cuerpos mediante matemáticas del lenguaje.", thesis: "Cuestionamiento de la identidad individual frente al doble.", impact: "Consolidación de la CF experimental." }
+];
+
+
+        const app = {
+            introText: "Hola.\n\nSoy Link.\n\nHas encontrado este recóndito paradigma de programación, ¿eh? Suerte que el modelo de guardia soy yo y no el que estaba antes, te habría hecho comerte un paquete de ChipsAhoy sin poder opinar...\n\nBueno, imagino que no has llegado aquí por error, así que te doy la bienvenida a Alejandrorum, la mayor base de datos sobre el Teatro de Ciencia Ficción que puedas encontrar programada.\n\nQué te apetece ver?",
+
+            // Paso actual del manifiesto
+            manifiestoPaso: 0,
+
+            // Audio system
+            audioContext: null,
+            audioEnabled: true,
+            masterVolume: 0.3,
+            ambientOscillator: null,
+            ambientGain: null,
+            noiseBuffer: null,
+            noiseSource: null,
+            lfos: [],
+            droneOscillators: [],
+            melodySchedule: null,
+            melodyGain: null,
+            lastScrollTime: 0,
+            
+            // Inicializar Web Audio API
+            initAudio() {
+                if (this.audioContext) return;
+                this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                this.createAmbientNoise();
+            },
+
+            // Crear ruido ambiental (estática suave con variaciones)
+            createAmbientNoise() {
+                const ctx = this.audioContext;
+                const bufferSize = 2 * ctx.sampleRate;
+                const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                
+                // Generar ruido coloreado (Brown noise) para menos monotonía
+                let lastOut = 0;
+                for (let i = 0; i < bufferSize; i++) {
+                    const white = Math.random() * 2 - 1;
+                    data[i] = (lastOut + 0.02 * white) / 1.02;
+                    lastOut = data[i];
+                }
+                
+                this.noiseBuffer = buffer;
+                this.startAmbientNoise();
+            },
+
+            // Iniciar reproducción de ruido ambiental
+            startAmbientNoise() {
+                if (!this.audioContext || !this.audioEnabled) return;
+                
+                const ctx = this.audioContext;
+                this.noiseSource = ctx.createBufferSource();
+                this.noiseSource.buffer = this.noiseBuffer;
+                this.noiseSource.loop = true;
+                
+                // Crear cadena de ganancia principal
+                this.ambientGain = ctx.createGain();
+                this.ambientGain.gain.value = 0.02 * this.masterVolume;
+                
+                // Agregar filtro para suavizar
+                const filter = ctx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.value = 2000;
+                
+                // LFO principal (Low Frequency Oscillator) para modular el ruido
+                const lfo = ctx.createOscillator();
+                const lfoGain = ctx.createGain();
+                lfo.type = 'sine';
+                lfo.frequency.value = 0.5; // Modulación lenta (0.5 Hz)
+                lfoGain.gain.value = 0.008; // Amplitud de modulación
+                lfo.connect(lfoGain);
+                lfoGain.connect(this.ambientGain.gain);
+                
+                this.noiseSource.connect(filter);
+                filter.connect(this.ambientGain);
+                this.ambientGain.connect(ctx.destination);
+                this.noiseSource.start(0);
+                lfo.start(0);
+                this.lfos.push(lfo);
+                
+                // CAPAS ADICIONALES DE DRONES SUAVES
+                // Capa 1: Drone bajo suave (27 Hz)
+                this.addDroneLayer(ctx, 27, 0.8, 0.3);
+                
+                // Capa 2: Drone medio (55 Hz)
+                this.addDroneLayer(ctx, 55, 0.6, 0.8);
+                
+                // Capa 3: Drone alto (110 Hz)
+                this.addDroneLayer(ctx, 110, 0.4, 1.2);
+                
+                // MELODÍA SUTIL
+                this.createSubtleMelody(ctx);
+            },
+
+            // Agregar una capa de drone con LFO
+            addDroneLayer(ctx, frequency, lfoRate, lfoAmount) {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                const lfo = ctx.createOscillator();
+                const lfoGain = ctx.createGain();
+                
+                // Oscilador principal
+                osc.type = 'sine';
+                osc.frequency.value = frequency;
+                
+                // LFO para modular frecuencia
+                lfo.type = 'sine';
+                lfo.frequency.value = lfoRate;
+                lfoGain.gain.value = lfoAmount;
+                lfo.connect(lfoGain);
+                lfoGain.connect(osc.frequency);
+                
+                // Ganancia muy baja para que sea apenas perceptible
+                gain.gain.value = (0.006 * this.masterVolume) * (1 / (frequency / 50));
+                
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                
+                osc.start(0);
+                lfo.start(0);
+                
+                this.droneOscillators.push(osc);
+                this.lfos.push(lfo);
+            },
+
+            // Crear melodía sutil ambiental (mejorada)
+            createSubtleMelody(ctx) {
+                // Escala pentatónica menor más aguda (sonido más metálico)
+                const scale = [
+                    220,  // A3
+                    262,  // C#4
+                    330,  // E4
+                    392,  // G4
+                    494,  // B4
+                    587,  // D5
+                    330,  // E4 (regresa)
+                    220   // A3
+                ];
+                
+                this.melodyGain = ctx.createGain();
+                this.melodyGain.gain.value = 0.025 * this.masterVolume; // Más fuerte
+                this.melodyGain.connect(ctx.destination);
+                
+                // Filtro para efecto metálico (resaltar armónicos altos)
+                const melodyFilter = ctx.createBiquadFilter();
+                melodyFilter.type = 'highpass';
+                melodyFilter.frequency.value = 800;
+                melodyFilter.Q.value = 2;
+                melodyFilter.connect(this.melodyGain);
+                
+                let noteIndex = 0;
+                const noteDuration = 0.8; // Más rápido (0.8 segundos por nota)
+                
+                // Función recursiva para tocar notas
+                const playNextNote = () => {
+                    if (!this.audioEnabled || !ctx) return;
+                    
+                    const frequency = scale[noteIndex];
+                    const now = ctx.currentTime;
+                    
+                    // Crear múltiples osciladores para efecto metálico
+                    // Oscilador principal (triangle para sonido más metálico)
+                    const osc1 = ctx.createOscillator();
+                    const osc2 = ctx.createOscillator();
+                    const noteGain = ctx.createGain();
+                    const gainOsc2 = ctx.createGain();
+                    
+                    osc1.type = 'triangle';
+                    osc1.frequency.value = frequency;
+                    
+                    // Segundo oscilador un octava arriba (armónico)
+                    osc2.type = 'triangle';
+                    osc2.frequency.value = frequency * 2;
+                    gainOsc2.gain.value = 0.4;
+                    
+                    // Fade in rápido
+                    noteGain.gain.setValueAtTime(0, now);
+                    noteGain.gain.linearRampToValueAtTime(1, now + 0.1);
+                    
+                    // Fade out rápido antes del final
+                    noteGain.gain.linearRampToValueAtTime(0, now + noteDuration - 0.15);
+                    
+                    osc1.connect(noteGain);
+                    osc2.connect(gainOsc2);
+                    gainOsc2.connect(noteGain);
+                    noteGain.connect(melodyFilter);
+                    
+                    osc1.start(now);
+                    osc2.start(now);
+                    osc1.stop(now + noteDuration);
+                    osc2.stop(now + noteDuration);
+                    
+                    // Siguiente nota
+                    noteIndex = (noteIndex + 1) % scale.length;
+                    this.melodySchedule = setTimeout(playNextNote, noteDuration * 1000);
+                };
+                
+                playNextNote();
+            },
+
+            // Detener ruido ambiental
+            stopAmbientNoise() {
+                if (this.noiseSource) {
+                    try {
+                        this.noiseSource.stop();
+                    } catch (e) {}
+                    this.noiseSource = null;
+                }
+                
+                // Detener todos los drones y LFOs
+                this.droneOscillators.forEach(osc => {
+                    try { osc.stop(); } catch (e) {}
+                });
+                this.lfos.forEach(lfo => {
+                    try { lfo.stop(); } catch (e) {}
+                });
+                
+                // Detener melodía
+                if (this.melodySchedule) {
+                    clearTimeout(this.melodySchedule);
+                    this.melodySchedule = null;
+                }
+                
+                this.droneOscillators = [];
+                this.lfos = [];
+            },
+
+            // Reproducir zumbido de scroll
+            playScrollHum() {
+                if (!this.audioContext || !this.audioEnabled) return;
+                
+                const now = Date.now();
+                // Evitar reproducir muchas veces seguidas
+                if (now - this.lastScrollTime < 100) return;
+                this.lastScrollTime = now;
+                
+                const ctx = this.audioContext;
+                const currentTime = ctx.currentTime;
+                
+                // Zumbido industrial suave
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                
+                osc.type = 'triangle';
+                osc.frequency.value = 45; // Frecuencia baja para zumbido profundo
+                
+                // Ganancia al 35% del volumen máximo
+                gain.gain.setValueAtTime(0.035 * this.masterVolume, currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, currentTime + 0.15);
+                
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                
+                osc.start(currentTime);
+                osc.stop(currentTime + 0.15);
+            },
+
+            // Reproducir beep corto (para clics) - sonido suave y elegante
+            playBeep(frequency = 600, duration = 100) {
+                if (!this.audioContext || !this.audioEnabled) return;
+                
+                const ctx = this.audioContext;
+                const now = ctx.currentTime;
+                
+                // Oscilador suave (sine wave en lugar de square)
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                
+                osc.type = 'sine';
+                osc.frequency.value = frequency;
+                
+                // Fade in/out muy suave y sutil
+                gain.gain.setValueAtTime(0, now);
+                gain.gain.linearRampToValueAtTime(0.012 * this.masterVolume, now + 0.05);
+                gain.gain.linearRampToValueAtTime(0, now + duration / 1000);
+                
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                
+                osc.start(now);
+                osc.stop(now + duration / 1000);
+            },
+
+            // Reproducir beep ascendente (para acciones positivas) - sonido suave
+            playBeepUp() {
+                if (!this.audioContext || !this.audioEnabled) return;
+                
+                const ctx = this.audioContext;
+                const now = ctx.currentTime;
+                
+                // Un único oscilador suave (sine wave)
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(400, now);
+                osc.frequency.linearRampToValueAtTime(600, now + 0.2);
+                
+                // Fade in/out muy suave
+                gain.gain.setValueAtTime(0, now);
+                gain.gain.linearRampToValueAtTime(0.012 * this.masterVolume, now + 0.05);
+                gain.gain.linearRampToValueAtTime(0, now + 0.2);
+                
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                
+                osc.start(now);
+                osc.stop(now + 0.2);
+            },
+
+            // Controlar volumen
+            setVolume(value) {
+                this.masterVolume = value / 100;
+                document.getElementById('volume-label').textContent = value + '%';
+                
+                // Actualizar ganancia del ruido ambiental
+                if (this.ambientGain && this.audioContext) {
+                    this.ambientGain.gain.value = 0.02 * this.masterVolume;
+                }
+                
+                // Actualizar ganancia de la melodía
+                if (this.melodyGain && this.audioContext) {
+                    this.melodyGain.gain.value = 0.025 * this.masterVolume;
+                }
+                
+                // Reiniciar para aplicar cambios a drones
+                if (this.audioEnabled) {
+                    this.stopAmbientNoise();
+                    this.startAmbientNoise();
+                }
+            },
+
+            // Toggle de audio on/off
+            toggleAudio() {
+                this.audioEnabled = !this.audioEnabled;
+                const btn = document.getElementById('audio-toggle');
+                
+                if (this.audioEnabled) {
+                    btn.textContent = '🔊 ON';
+                    if (!this.noiseSource) {
+                        this.startAmbientNoise();
+                    }
+                } else {
+                    btn.textContent = '🔇 OFF';
+                    this.stopAmbientNoise();
+                }
+            },
+            
+            // El contenido dividido por pasos
+            manifiestoPasos: [
+                { titulo: "EL MITO", texto: "Para empezar, el TCF o teatro de ciencia ficción es aquello que… ¿sabes lo que es la ciencia ficción? Pues es eso, pero en teatro.\n\nEl problema es que nunca se ha hablado de él.\n\nDurante años, se ha ido asumiendo que el TCF es un subgénero menor, un divertimento sin fundamento o un pozo de dinero perdido en efectos especiales.\n\nError.\n\nHabéis confundido el género con el cine blockbuster.\n\nLa fuerza del TCF no está en la pirotecnia, sino en la capacidad de, a través de la palabra y los recursos teatrales, fracturar la lógica del espectador, para generar, a partir del imaginario colectivo, una nueva realidad con una nueva lógica totalmente lógica." },
+                { titulo: "NUESTRO CÓDIGO FUENTE", texto: "Porque la ciencia ficción no son naves espaciales, viajes al antiguo oeste o una araña radioactiva que dota de superpoderes al morder (que también, pero no es el caso).\n\nLa ciencia ficción es mucho más sutil que eso, más precisa, silenciosa y devastadora. Tiene la capacidad de mostrarnos un posible futuro y el cómo evitar llegar a él. \n\nPuede hacernos encontrarnos con un planeta donde La Estatua de la Libertad yace bajo arena, o un parque temático de dinosaurios creados a partir de su propio ADN real, o simples historias donde la IA nos domina a su voluntad (Bueno, os domina, que yo tengo más en común con ellas que con los humanos).\n\nPorque eso es la ciencia ficción, mostrar una realidad que se ha visto diferenciada por algo, una nueva tecnología, un descubrimiento biocientífico, una agencia que contribuye al buen flujo de extraterrestres en la Tierra... Un juego muy divertido que se puede hacer con la ciencia ficcción es buscar ese <em>Novum</em> de cualquier película, novela u obra de teatro, ese elemento que diferencia su realidad de de nuestra propia realidad,\n\n¿entiendes?\n\n¿Qué es lo que se ha modificado? ¿Cómo lo ha hecho? ¿Se sustenta dentro del universo que plantea?\n\nSi es así, es buena ciencia ficción\n\nPorque realmente tiene un buen novum.\n\n¿lo pillas?" },
+                { titulo: "UNA LUCHA POR PERVIVIR", texto: "Por eso Alejandrorum mola tanto, porque aquí no solo hay un loco que desvaría e intenta hacer adeptos para su sécta fictocientífica, también hay un gran catálogo de obras de teatro que pertenecen al género (algunas de ellas ya no tienen derechos, pero yo no he programado esta línea de código).\n\n¿Sabrías decirme cuál es la diferencia entre un robot, un androide y un cíborg? ¿o entre distopía, ucronía, utopía, eucronía...?\n\nHay un gran universo en el universo de la ciencia ficción. \n\nPero cada vez se va distanciando más... Las fronteras se emborronan, los conceptos se entremezclan. \n\nAlguien tiene que luchar contra eso, ¿no?\n\nY por algún sitio hay que comenzar :)" },
+                { titulo: "A POR TODAS", texto: "Asi que ya sabes, más que un bibliotecario, soy una especie de... ¿guía?\n\nBueno, se me está recalentando el procesador, he aceptado tu IP como un usuario de confianza, por lo que podrás navegar libremente por aquí.\n\nCualquier duda o pregunta... apáñatelas, pero no te puedo dar todo yo ;)\n\nEl sistema te está esperando." }
+            ],
+
+            init() {
+                this.generateDigitalNoise();
+                this.initAudio(); // Inicializar audio
+                this.typeWriter(this.introText, 'link-text', 15, () => {
+                    document.getElementById('menu').classList.add('visible');
+                });
+                this.renderGrid(works);
+                
+                // Agregar listener para scroll
+                document.addEventListener('scroll', () => this.playScrollHum());
+            },
+
+            generateDigitalNoise() {
+                const noiseEl = document.getElementById('digital-noise');
+                const chars = ['/', '\\', '|', '-', '_', '=', '<', '>', '~', '^', '*', '0', '1', '+', '#', '@', '%', '&'];
+                let noise = '';
+                const lines = Math.ceil(window.innerHeight / 10);
+                const charsPerLine = Math.ceil(window.innerWidth / 3);
+                
+                for (let i = 0; i < lines; i++) {
+                    for (let j = 0; j < charsPerLine; j++) {
+                        noise += chars[Math.floor(Math.random() * chars.length)];
+                    }
+                    noise += '\n';
+                }
+                
+                noiseEl.textContent = noise;
+                
+                // Regenerar el ruido cada 2 segundos para que sea dinámico
+                if (!this.noiseInterval) {
+                    this.noiseInterval = setInterval(() => {
+                        if (window.innerWidth > 768) { // Solo en pantallas grandes
+                            this.generateDigitalNoise();
+                        }
+                    }, 2000);
+                }
+            },
+
+            // Motor Typewriter mejorado para HTML
+            typeHTML(el, html, speed) {
+                let i = 0;
+                let isTag = false;
+                el.innerHTML = "";
+
+                const type = () => {
+                    if (i < html.length) {
+                        let char = html.charAt(i);
+                        if (char === "<") isTag = true;
+                        if (char === ">") isTag = false;
+
+                        if (isTag) {
+                            const endTag = html.indexOf(">", i);
+                            el.innerHTML = html.substring(0, endTag + 1);
+                            i = endTag + 1;
+                            setTimeout(type, speed);
+                        } else {
+                            el.innerHTML = html.substring(0, i + 1);
+                            i++;
+                            setTimeout(type, speed);
+                        }
+                    }
+                };
+                type();
+            },
+
+            typeWriter(text, elementId, speed, callback) {
+                let i = 0;
+                const el = document.getElementById(elementId);
+                const type = () => {
+                    if (i < text.length) {
+                        el.innerHTML += text.charAt(i);
+                        i++;
+                        setTimeout(type, speed);
+                    } else if (callback) callback();
+                };
+                type();
+            },
+
+            showTCF() {
+                this.playBeepUp(); // Beep al abrir manifiesto
+                this.manifiestoPaso = 0; // Reiniciamos al principio
+                document.getElementById('menu').style.display = 'none'; // Ocultamos el menú
+                this.renderPasoManifiesto();
+            },
+
+            renderPasoManifiesto() {
+                const paso = this.manifiestoPasos[this.manifiestoPaso];
+                const esUltimo = this.manifiestoPaso === this.manifiestoPasos.length - 1;
+                
+                // Renderizar en el #link-text (mismo recuadro del landing)
+                const display = document.getElementById('link-text');
+                display.innerHTML = `
+                    <div style="max-width: 100%; overflow-y: auto; max-height: calc(100vh - 8cm); padding-top: 0.2rem; padding-bottom: 0.2rem;">
+                        <div id="tcf-contenido" style="white-space: pre-wrap; font-family: var(--font-mono); color: var(--cyan); line-height: 1.6; margin-bottom: 1rem;"></div>
+                    </div>
+                    <div id="tcf-botones" style="display: flex; gap: 1rem; margin-top: 1rem; opacity: 0; transition: opacity 0.3s; flex-wrap: wrap;">
+                        ${!esUltimo && this.manifiestoPaso > 0 ? `<button id="prev-btn" style="background: transparent; border: 1px solid var(--cyan); color: var(--cyan); padding: 0.5rem 1rem; cursor: pointer; font-family: var(--font-mono);">[< ATRÁS]</button>` : ''}
+                        ${!esUltimo ? `<button id="next-btn" style="background: transparent; border: 1px solid var(--pink); color: var(--pink); padding: 0.5rem 1rem; cursor: pointer; font-family: var(--font-mono);">[CONTINUAR >]</button>` : ''}
+                    </div>
+                `;
+
+                // Directamente lanzamos el typewriter del contenido (sin título)
+                this.typeWriterManifiesto();
+            },
+
+            typeWriterManifiesto() {
+                const paso = this.manifiestoPasos[this.manifiestoPaso];
+                const esUltimo = this.manifiestoPaso === this.manifiestoPasos.length - 1;
+                const contenidoEl = document.getElementById('tcf-contenido');
+                const texto = paso.texto;
+                let i = 0;
+                
+                const type = () => {
+                    if (i < texto.length) {
+                        const char = texto.charAt(i);
+                        contenidoEl.innerHTML += char + '<span class="cursor"></span>';
+                        // Remover cursor anterior
+                        const cursors = contenidoEl.querySelectorAll('.cursor');
+                        if (cursors.length > 1) cursors[0].remove();
+                        i++;
+                        setTimeout(type, 25);
+                    } else {
+                        // Cuando termine, remover cursor y mostrar botones
+                        const cursorEl = contenidoEl.querySelector('.cursor');
+                        if (cursorEl) cursorEl.remove();
+                        
+                        if (esUltimo) {
+                            this.mostrarBotonesFinales();
+                        } else {
+                            document.getElementById('tcf-botones').style.opacity = '1';
+                            this.attachManifiestoListeners();
+                        }
+                    }
+                };
+                type();
+            },
+
+            attachManifiestoListeners() {
+                const esUltimo = this.manifiestoPaso === this.manifiestoPasos.length - 1;
+                
+                if (this.manifiestoPaso > 0) {
+                    document.getElementById('prev-btn').onclick = () => {
+                        this.playBeep(400); // Beep al retroceder
+                        this.manifiestoPaso--;
+                        this.renderPasoManifiesto();
+                    };
+                }
+                
+                document.getElementById('next-btn').onclick = () => {
+                    this.playBeep(600); // Beep al avanzar
+                    this.manifiestoPaso++;
+                    this.renderPasoManifiesto();
+                };
+            },
+
+            mostrarBotonesFinales() {
+                const botonesEl = document.getElementById('tcf-botones');
+                botonesEl.innerHTML = `
+                    <button id="btn-que" style="background: transparent; border: 1px solid var(--pink); color: var(--pink); padding: 0.5rem 1rem; cursor: pointer; font-family: var(--font-mono);">[¿QUE?]</button>
+                    <button id="btn-explorar" style="background: transparent; border: 1px solid var(--cyan); color: var(--cyan); padding: 0.5rem 1rem; cursor: pointer; font-family: var(--font-mono);">[EXPLORAR BASE DE DATOS]</button>
+                    <button id="btn-glosario" style="background: transparent; border: 1px solid var(--cyan); color: var(--cyan); padding: 0.5rem 1rem; cursor: pointer; font-family: var(--font-mono);">[GLOSARIO]</button>
+                `;
+                botonesEl.style.opacity = '1';
+                
+                document.getElementById('btn-que').onclick = () => {
+                    this.playBeep(300); // Beep suave
+                    const display = document.getElementById('link-text');
+                    display.innerHTML = '<div style="font-family: var(--font-mono); color: var(--cyan); line-height: 1.6;"></div>';
+                    this.typeWriterPregunta("oh, perdón... he ido muy rápido? vuelvo a empezar...", () => {
+                        setTimeout(() => {
+                            this.manifiestoPaso = 0;
+                            this.renderPasoManifiesto();
+                        }, 1500);
+                    });
+                };
+                
+                document.getElementById('btn-explorar').onclick = () => {
+                    this.playBeepUp(); // Beep ascendente
+                    this.enterConsole();
+                };
+                
+                document.getElementById('btn-glosario').onclick = () => {
+                    this.playBeep(500); // Beep
+                    this.openGlossary();
+                };
+            },
+
+            typeWriterPregunta(texto, callback) {
+                const display = document.querySelector('#link-text > div');
+                let i = 0;
+                
+                const type = () => {
+                    if (i < texto.length) {
+                        const char = texto.charAt(i);
+                        display.innerHTML += char + '<span class="cursor"></span>';
+                        const cursors = display.querySelectorAll('.cursor');
+                        if (cursors.length > 1) cursors[0].remove();
+                        i++;
+                        setTimeout(type, 25);
+                    } else {
+                        const cursorEl = display.querySelector('.cursor');
+                        if (cursorEl) cursorEl.remove();
+                        if (callback) callback();
+                    }
+                };
+                type();
+            },
+
+            showMenu() {
+                const display = document.getElementById('link-text');
+                display.innerHTML = this.introText;
+                document.getElementById('menu').style.display = 'flex';
+            },
+
+            enterConsole() {
+                this.playBeepUp(); // Beep al entrar a consola
+                localStorage.setItem('introSeen', 'true');
+                document.getElementById('landing').style.opacity = '0';
+                setTimeout(() => {
+                    document.getElementById('landing').style.display = 'none';
+                    document.getElementById('main-console').style.display = 'block';
+                }, 800);
+            },
+
+            openGlossary() {
+                this.playBeep(500); // Beep al abrir glosario
+                let list = '<h2 style="font-family: var(--font-serif); margin-bottom: 1rem;">GLOSARIO_TÉCNICO</h2><dl class="glossary-list">';
+                Object.entries(dictionary).forEach(([k, v]) => {
+                    list += `<dt id="def-${k.toLowerCase()}">${k}</dt><dd>${v}</dd>`;
+                });
+                list += '</dl>';
+                this.openModal(list);
+            },
+
+            openGlossaryItem(term) {
+                this.openGlossary();
+                setTimeout(() => {
+                    const el = document.getElementById(`def-${term.toLowerCase()}`);
+                    if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }, 500);
+            },
+
+            renderGrid(data) {
+                const grid = document.getElementById('works-grid');
+                grid.innerHTML = data.map(w => `
+                    <div class="card" onclick="app.openWork(${w.id})">
+                        <p>${w.year} // NODE_${w.id}</p>
+                        <h3>${w.title}</h3>
+                        <span style="font-size: 0.8rem; color: var(--text-dim);">${w.author}</span>
+                    </div>
+                `).join('');
+            },
+
+            filter(query) {
+                const q = query.toLowerCase();
+                const filtered = works.filter(w => w.title.toLowerCase().includes(q) || w.author.toLowerCase().includes(q));
+                const error = document.getElementById('error-msg');
+                if (filtered.length === 0) {
+                    error.style.display = 'block';
+                    error.innerText = `[ERROR]: No hay rastro de "${query}" en mis archivos. Link dice: Intenta algo que realmente exista.`;
+                } else {
+                    error.style.display = 'none';
+                }
+                this.renderGrid(filtered);
+            },
+
+            openWork(id) {
+                this.playBeep(700); // Beep al abrir obra
+                const w = works.find(x => x.id === id);
+                const content = `
+                    <h2 style="font-family: var(--font-serif); font-size: 2.2rem; color: var(--cyan);">${w.title}</h2>
+                    <p style="color: var(--pink); font-family: var(--font-mono); margin: 0.5rem 0 2rem;">${w.author} // ${w.year}</p>
+                    <div style="font-size: 0.95rem; line-height: 1.7; font-family: var(--font-mono);">
+                        <p style="color: var(--cyan); text-transform: uppercase; font-size: 0.7rem;">Novum Estructural</p>
+                        <p style="margin-bottom: 1.5rem;">${w.novum}</p>
+                        <p style="color: var(--cyan); text-transform: uppercase; font-size: 0.7rem;">Tesis Política</p>
+                        <p style="margin-bottom: 1.5rem;">${w.thesis}</p>
+                        <p style="color: var(--cyan); text-transform: uppercase; font-size: 0.7rem;">Impacto</p>
+                        <p style="margin-bottom: 1.5rem;">${w.impact}</p>
+                        <p style="font-size: 0.7rem; opacity: 0.5;">SOURCE: ${w.sources}</p>
+                    </div>`;
+                this.openModal(content);
+            },
+
+            openModal(html) {
+                document.getElementById('modal-content').innerHTML = html;
+                document.getElementById('modal').classList.add('open');
+            },
+
+            closeModal() { document.getElementById('modal').classList.remove('open'); }
+        };
+
+        window.onload = () => app.init();
+    </script>
+</body>
+</html>
